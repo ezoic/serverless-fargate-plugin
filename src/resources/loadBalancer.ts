@@ -106,9 +106,7 @@ export class LoadBalancer extends Resource<IClusterOptions> {
                     "DeletionPolicy": "Delete",
                     "Properties": {
                         "Description": `Ingress from the ALB - task ${service.getName(NamePostFix.SERVICE)}`,
-                        "GroupId": {
-                            "Ref": this.cluster.getName(NamePostFix.CONTAINER_SECURITY_GROUP)
-                        },
+                        "GroupName": this.cluster.getName(NamePostFix.CONTAINER_SECURITY_GROUP),
                         "IpProtocol": -1,
                         "SourceSecurityGroupId": {
                             "Ref": ELBServiceSecGroup
@@ -149,7 +147,7 @@ export class LoadBalancer extends Resource<IClusterOptions> {
                         "Port": listener.proto.port,
                         "Protocol": listener.proto.getOptions().protocol,
                         ...(listener.proto.getOptions().protocol == "HTTPS" ? {
-                            "Certificates": listener.proto.getOptions().certificateArn.map((certificateArn: string): any => ({
+                            "Certificates": listener.proto.getOptions().certificateArns.map((certificateArn: string): any => ({
                                 "CertificateArn": certificateArn
                             }))} : {}
                         )
