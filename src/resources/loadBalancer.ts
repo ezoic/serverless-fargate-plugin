@@ -106,7 +106,9 @@ export class LoadBalancer extends Resource<IClusterOptions> {
                     "DeletionPolicy": "Delete",
                     "Properties": {
                         "Description": `Ingress from the ALB - task ${service.getName(NamePostFix.SERVICE)}`,
-                        "GroupName": this.cluster.getName(NamePostFix.CONTAINER_SECURITY_GROUP),
+                        "GroupId": {
+                            "Ref": this.cluster.getName(NamePostFix.CONTAINER_SECURITY_GROUP),
+                        },
                         "IpProtocol": -1,
                         "SourceSecurityGroupId": {
                             "Ref": ELBServiceSecGroup

@@ -66,7 +66,19 @@ export class Cluster extends Resource<IClusterOptions> {
     }
 
     private getClusterSecurityGroups(): any {
-        if (this.getVPC().useExistingVPC()) { return {}; } //No security group resource is required
+        if (this.getVPC().useExistingVPC()) { 
+            return {
+                [this.getName(NamePostFix.CONTAINER_SECURITY_GROUP)]: {
+                    "Type": "AWS::EC2::SecurityGroup",
+                    "DeletionPolicy": "Delete",
+                    "Properties": {
+                        ...(this.getTags() ? { "Tags": this.getTags() } : {}),
+                        "GroupDescription": "Access to the Fargate containers",
+                        "VpcId": this.getVPC().getRefName()
+                    }
+                }
+            };
+        } //No security group resource is required
         else {
             return {
                 [this.getName(NamePostFix.CONTAINER_SECURITY_GROUP)]: {
