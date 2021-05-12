@@ -9,6 +9,7 @@ export class Service extends Resource<IServiceOptions> {
     private static readonly EXECUTION_ROLE_NAME: string = "ECSServiceExecutionRole";
     private readonly logGroupName: string;
     public readonly ports: number[];
+    public readonly targetGroupPorts: number[];
     private readonly cluster: Cluster;
     public readonly protocols: Protocol[];
 
@@ -25,10 +26,12 @@ export class Service extends Resource<IServiceOptions> {
         super(options, stage, safeResourceName, tags); 
         this.cluster = cluster;
         this.ports = [];
+        this.targetGroupPorts = [];
         this.protocols = (this.cluster.getOptions().disableELB || this.options.disableELB ? [] : this.options.protocols.map((serviceProtocolOptions: IServiceProtocolOptions, index): any => {
             //use specified port for the first protocol
             this.ports[index] = (this.options.port && index == 0 ? this.options.port : (Math.floor(Math.random() * 49151) + 1024));
-            console.debug(`Serverless: fargate-plugin: Using port ${this.ports[index]} for service ${options.name} on cluster ${cluster.getName(NamePostFix.CLUSTER)} - protocol ${serviceProtocolOptions.protocol}`);
+            this.targetGroupPorts[index] = (serviceProtocolOptions.port && index == 0 ? serviceProtocolOptions.port : this.ports[index]);
+            console.debug(`Serverless: fargate-plugin: Using listner port ${this.ports[index]}, target port ${this.targetGroupPorts[index]} for service ${options.name} on cluster ${cluster.getName(NamePostFix.CLUSTER)} - protocol ${serviceProtocolOptions.protocol}`);
             return new Protocol(cluster, this, stage, serviceProtocolOptions, this.ports[index], tags);
         }));
         this.logGroupName = `serverless-fargate-${options.name}-${stage}-${uuid()}`;
@@ -95,7 +98,7 @@ export class Service extends Resource<IServiceOptions> {
                         "LoadBalancers": [
                             {
                                 "ContainerName": this.getName(NamePostFix.CONTAINER_NAME),
-                                "ContainerPort": this.ports[0],
+                                "ContainerPort": this.targetGroupPorts[0],
                                 "TargetGroupArn": {
                                     "Ref": this.getName(NamePostFix.TARGET_GROUP)
                                 }
@@ -133,7 +136,7 @@ export class Service extends Resource<IServiceOptions> {
                             "Image": this.options.image || `${this.options.imageRepository}:${this.options.name}-${this.options.imageTag}`,
                             ...(this.options.entryPoint ? { "EntryPoint": this.options.entryPoint } : {}),
                             ...(this.cluster.getOptions().disableELB || this.options.disableELB 
-                                    ? {} : {"PortMappings": [{ "ContainerPort": this.ports[0] }]}
+                                    ? {} : {"PortMappings": [{ "ContainerPort": this.targetGroupPorts[0] }]}
                                 ),
                             "LogConfiguration": {
                                 "LogDriver": "awslogs",
@@ -173,8 +176,8 @@ export class Service extends Resource<IServiceOptions> {
                     "HealthyThresholdCount": 2,
                     "TargetType": "ip",
                     "Name": this.getName(NamePostFix.TARGET_GROUP),
-                    "Port": this.ports[0],
-                    "Protocol": "HTTP",
+                    "Port": this.targetGroupPorts[0],
+                    "Protocol": this.options.healthCheckProtocol ? this.options.healthCheckProtocol : "HTTP",
                     "UnhealthyThresholdCount": 2,
                     "VpcId": this.cluster.getVPC().getRefName()
                 }

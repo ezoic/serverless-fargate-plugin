@@ -87,6 +87,7 @@ export class Protocol extends Resource<IServiceProtocolOptions> {
         }
     }
     private generateListenerRule(path: string, index: number, method?: string): any {
+        console.debug(`Serverless: fargate-plugin: ${this.cluster.loadBalancer.getName(NamePostFix.LOAD_BALANCER_LISTENER) + this.port}`);
         return {
             [`${this.getName(NamePostFix.LOAD_BALANCER_LISTENER_RULE)}${index}`]: {
                 "Type": "AWS::ElasticLoadBalancingV2::ListenerRule",

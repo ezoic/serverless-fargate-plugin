@@ -11,6 +11,7 @@ export interface IVPCOptions {
 export interface IServiceProtocolOptions {
     protocol: "HTTP" | "HTTPS";
     certificateArns?: string[]; // needed for https
+    port?: number; // the target group port. defaults to listener port if not specified
 }
 
 enum AutoScalingMetricType {
